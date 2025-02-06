@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Driver Info</title>
+    <link rel="icon" type="image/png" href="/driver.png">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  </head>
+  <body class="bg-gray-100 p-6">
+    <div class="container mx-auto">
+      <div class="max-w-3xl mx-auto text-center mt-4">
+        <h1
+          class="text-4xl font-bold text-gray-900 leading-tight mb-2 pb-4 relative"
+        >
+          <span
+            class="bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-sky-500"
+            >Driver Information</span
+          >
+          <span
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-sky-500"
+          ></span>
+        </h1>
+        <p class="text-lg text-gray-800 mb-8">
+          Here you can manage driver infromation
+        </p>
+      </div>
+      <!-- add button -->
+      <button class="bg-green-600 font-semibold text-white px-4 py-2 rounded-lg" id="btnAdd">
+        Add Driver
+      </button>
+      <!-- data table -->
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full bg-white rounded-lg shadow-md">
+          <thead>
+            <tr class="bg-gray-200 text-left">
+              <th class="p-2">Sr No</th>
+              <th class="p-2">First Name</th>
+              <th class="p-2">Last Name</th>
+              <th class="p-2">Gender</th>
+              <th class="p-2">Date of Birth</th>
+              <th class="p-2 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="tblData"></tbody>
+        </table>
+      </div>
+      <!-- modal -->
+      <div
+        id="myModal"
+        class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      >
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+          <h2 class="text-xl font-bold mb-4" id="modalTitle">Add Driver</h2>
+          <div class="mb-2">
+            <label class="block font-bold"
+              >First Name <span class="text-red-600">*</span></label
+            >
+            <input
+              id="txtFirstName"
+              type="text"
+              class="w-full p-2 border rounded-lg"
+              placeholder="Enter First Name"
+            />
+            <span id="firstNameError" class="text-red-600 text-sm hidden"
+              >First Name is required</span
+            >
+          </div>
+          <div class="mb-2">
+            <label class="block font-bold"
+              >Last Name <span class="text-red-600">*</span></label
+            >
+            <input
+              id="txtLastName"
+              type="text"
+              class="w-full p-2 border rounded-lg"
+              placeholder="Enter Last Name"
+            />
+            <span id="lastNameError" class="text-red-600 text-sm hidden"
+              >Last Name is required</span
+            >
+          </div>
+          <div class="mb-2">
+            <label class="block font-bold">Gender</label>
+            <select id="txtGender" class="w-full p-2 border rounded-lg">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="block font-bold"
+              >Date of Birth <span class="text-red-600">*</span></label
+            >
+            <input
+              id="txtDob"
+              type="text"
+              class="w-full p-2 border rounded-lg"
+              placeholder="MM/DD/YYYY"
+            />
+            <span id="dobError" class="text-red-600 text-sm hidden"
+              >Date of Birth is required</span
+            >
+          </div>
+          <input id="txtId" type="hidden" />
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              class="bg-gray-500 text-white px-4 py-2 rounded-lg"
+              id="btnClose"
+            >
+              Cancel
+            </button>
+            <button
+              class="bg-green-500 text-white px-4 py-2 rounded-lg"
+              id="btnSave"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      $(document).ready(function () {
+        loadDataFromLocal();
+
+        $("#btnAdd").click(function () {
+          clearForm();
+          $("#modalTitle").text("Add Driver");
+          $("#myModal").removeClass("hidden");
+        });
+
+        $("#btnClose").click(function () {
+          $("#myModal").addClass("hidden");
+        });
+
+        $("#tblData").on("click", ".btn-edit", function () {
+          $("#myModal").removeClass("hidden");
+          const row = $(this).closest("tr");
+          $("#txtFirstName").val(row.find(".txtFirstName").text());
+          $("#txtLastName").val(row.find(".txtLastName").text());
+          $("#txtGender").val(row.find(".txtGender").text());
+          $("#txtDob").val(row.find(".txtDob").text());
+          $("#txtId").val(row.data("id"));
+          $("#btnSave").text("Update");
+        });
+
+        $("#tblData").on("click", ".btn-delete", function () {
+          const id = $(this).closest("tr").data("id");
+          deleteDataFromLocal(id);
+        });
+
+        $("#btnSave").click(function () {
+          if (validateForm()) {
+            if ($("#txtId").val() === "") {
+              addDataToLocal();
+            } else {
+              updateDataFromLocal();
+            }
+          }
+        });
+
+        $("#btnClear").click(clearForm);
+      });
+
+      function validateForm() {
+        let isValid = true;
+
+        // Reset error messages
+        $("#firstNameError, #lastNameError, #dobError").addClass("hidden");
+
+        // Validate First Name
+        if ($("#txtFirstName").val().trim() === "") {
+          $("#firstNameError").removeClass("hidden");
+          isValid = false;
+        }
+
+        // Validate Last Name
+        if ($("#txtLastName").val().trim() === "") {
+          $("#lastNameError").removeClass("hidden");
+          isValid = false;
+        }
+
+        // Validate Date of Birth
+        if ($("#txtDob").val().trim() === "") {
+          $("#dobError").removeClass("hidden");
+          isValid = false;
+        }
+
+        return isValid;
+      }
+
+      function clearForm() {
+        $("#txtFirstName, #txtLastName, #txtGender, #txtDob, #txtId").val("");
+        $("#firstNameError, #lastNameError, #dobError").addClass("hidden");
+        $("#btnSave").text("Save");
+        $("#myModal").addClass("hidden");
+      }
+
+      function loadDataFromLocal() {
+        let localArray = JSON.parse(localStorage.getItem("localData")) || [];
+        $("#tblData").html(
+          localArray.length
+            ? ""
+            : "<tr><td colspan='6' class='text-center p-4'> No drivers added</td></tr>"
+        );
+        localArray.forEach((item, index) => {
+          $("#tblData").append(`
+          <tr data-id='${item.id}' class='border-b'>
+            <td class='p-2'>${index + 1}</td>
+            <td class='txtFirstName p-2'>${item.firstName}</td>
+            <td class='txtLastName p-2'>${item.lastName}</td>
+            <td class='txtGender p-2'>${item.gender}</td>
+            <td class='txtDob p-2'>${item.dob}</td>
+            <td class='p-2 text-center'>
+              <button class='btn-edit bg-blue-500 text-white px-3 py-1 rounded-lg'>Edit</button>
+              <button class='btn-delete bg-red-500 text-white px-3 py-1 rounded-lg'>Delete</button>
+            </td>
+          </tr>
+        `);
+        });
+      }
+
+      function updateDataFromLocal() {
+        let localArray = JSON.parse(localStorage.getItem("localData")) || [];
+        let id = Number($("#txtId").val());
+        let index = localArray.findIndex((item) => item.id === id);
+        if (index !== -1) {
+          localArray[index] = {
+            id: id,
+            firstName: $("#txtFirstName").val(),
+            lastName: $("#txtLastName").val(),
+            gender: $("#txtGender").val(),
+            dob: $("#txtDob").val(),
+          };
+          localStorage.setItem("localData", JSON.stringify(localArray));
+        }
+        loadDataFromLocal();
+        clearForm();
+      }
+
+      function addDataToLocal() {
+        let localArray = JSON.parse(localStorage.getItem("localData")) || [];
+        let newItem = {
+          id: Date.now(),
+          firstName: $("#txtFirstName").val(),
+          lastName: $("#txtLastName").val(),
+          gender: $("#txtGender").val(),
+          dob: $("#txtDob").val(),
+        };
+        localArray.push(newItem);
+        localStorage.setItem("localData", JSON.stringify(localArray));
+        loadDataFromLocal();
+        clearForm();
+      }
+
+      function deleteDataFromLocal(id) {
+        let localArray = JSON.parse(localStorage.getItem("localData")) || [];
+        localArray = localArray.filter((item) => item.id != id);
+        localStorage.setItem("localData", JSON.stringify(localArray));
+        loadDataFromLocal();
+      }
+    </script>
+  </body>
+</html>
